@@ -3,6 +3,32 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+# ---------------- LOGIN USERS ---------------- #
+users = {
+    "admin": "1234",
+    "student": "abcd"
+}
+
+# ---------------- SESSION ---------------- #
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
+# ---------------- LOGIN FUNCTION ---------------- #
+def login():
+    st.title("🔐 Login Page")
+
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+
+    if st.button("Login"):
+        if username in users and users[username] == password:
+            st.session_state.logged_in = True
+            st.success("Login Successful ✅")
+            st.experimental_rerun()
+        else:
+            st.error("Invalid Username or Password ❌")
+#------------------ MAIN APP -------------------------#
+def main_app():
 st.set_page_config(page_title="Quiz Analytics", layout="wide")
 
 st.title("📊 Smart Quiz Analytics Dashboard")
