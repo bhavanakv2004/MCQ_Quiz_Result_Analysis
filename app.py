@@ -42,3 +42,50 @@ if file:
     df["Score"] = df.apply(calc_score, axis=1)
     df["Rank"] = df["Score"].rank(ascending=False)
 
+# KPIs
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Total Students", len(df))
+    col2.metric("Average Score", round(df["Score"].mean(), 2))
+    col3.metric("Top Score", df["Score"].max())
+
+    # Leaderboard
+    st.subheader("Top Students")
+    st.dataframe(df.sort_values("Score", ascending=False).head(10))
+
+    # Charts
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.subheader("Score Distribution")
+        fig, ax = plt.subplots()
+        ax.hist(df["Score"], bins=5)
+        st.pyplot(fig)
+
+    with col2:
+        if "Department" in df.columns:
+            st.subheader("Department Performance")
+            st.bar_chart(df.groupby("Department")["Score"].mean())
+
+    if "College" in df.columns:
+        st.subheader("College Performance")
+        st.bar_chart(df.groupby("College")["Score"].mean())
+
+    # Question analysis
+    st.subheader("Question Difficulty")
+
+    acc = {}
+    for q in question_cols:
+        acc[q] = (df[q] == answer_key[q]).mean()
+
+    q_df = pd.DataFrame.from_dict(acc, orient="index", columns=["Accuracy"])
+    st.bar_chart(q_df)
+
+    # Download
+    st.download_button(
+        "Download Report",
+        df.to_csv(index=False),
+        "quiz_report.csv"
+    )
+
+else:
+    st.info("Upload a dataset to begin")
