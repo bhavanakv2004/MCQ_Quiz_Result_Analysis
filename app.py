@@ -24,7 +24,7 @@ def login():
         if username in users and users[username] == password:
             st.session_state.logged_in = True
             st.success("Login Successful ✅")
-            st.experimental_rerun()
+    
         else:
             st.error("Invalid Username or Password ❌")
 
@@ -38,7 +38,6 @@ def main_app():
     # Logout button
     if st.button("Logout"):
         st.session_state.logged_in = False
-        st.experimental_rerun()
 
     # Upload
     file = st.file_uploader("Upload CSV or Excel File", type=["csv", "xlsx"])
