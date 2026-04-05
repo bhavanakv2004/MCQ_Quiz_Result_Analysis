@@ -111,8 +111,8 @@ def main_app():
             acc[q] = (df[q] == answer_key[q]).mean()
 
         q_df = pd.DataFrame.from_dict(acc, orient="index", columns=["Accuracy"])
-        st.bar_chart(q_df)
-        st.pie_chart(College_df)
+        st.bar_chart(q_df,(2,2))
+        
         # Download
         st.download_button(
             "Download Report",
