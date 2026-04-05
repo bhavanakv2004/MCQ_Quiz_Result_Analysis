@@ -20,4 +20,25 @@ if file:
 
     st.success("File uploaded successfully")
 
-   
+   # ---Detect questions ---- #
+    question_cols = [col for col in df.columns if col.startswith("Q")]
+
+    st.write("Detected Questions:", question_cols)
+
+    # ---Sidebar answer key --- #
+    st.sidebar.header("Answer Key")
+    answer_key = {}
+    for q in question_cols:
+        answer_key[q] = st.sidebar.selectbox(q, ["A", "B", "C", "D"])
+
+    # ---Score calculation --- #
+    def calc_score(row):
+        score = 0
+        for q in answer_key:
+            if row[q] == answer_key[q]:
+                score += 1
+        return score
+
+    df["Score"] = df.apply(calc_score, axis=1)
+    df["Rank"] = df["Score"].rank(ascending=False)
+
