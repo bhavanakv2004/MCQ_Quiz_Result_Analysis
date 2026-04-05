@@ -2,6 +2,13 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
+
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Image, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+
+# ---------------- CONFIG ---------------- #
+st.set_page_config(page_title="Quiz Analytics", layout="wide")
 
 # ---------------- LOGIN USERS ---------------- #
 users = {
@@ -24,20 +31,19 @@ def login():
         if username in users and users[username] == password:
             st.session_state.logged_in = True
             st.success("Login Successful ✅")
-    
+            st.rerun()   # ✅ FIXED
         else:
             st.error("Invalid Username or Password ❌")
 
 # ---------------- MAIN APP ---------------- #
 def main_app():
 
-    st.set_page_config(page_title="Quiz Analytics", layout="wide")
-
     st.title("📊 Smart Quiz Analytics Dashboard")
 
-    # Logout button
+    # Logout
     if st.button("Logout"):
         st.session_state.logged_in = False
+        st.rerun()
 
     # Upload
     file = st.file_uploader("Upload CSV or Excel File", type=["csv", "xlsx"])
@@ -55,10 +61,9 @@ def main_app():
 
         # Detect questions
         question_cols = [col for col in df.columns if col.startswith("Q")]
-
         st.write("Detected Questions:", question_cols)
 
-        # Sidebar answer key
+        # Sidebar Answer Key
         st.sidebar.header("Answer Key")
         answer_key = {}
         for q in question_cols:
@@ -82,29 +87,40 @@ def main_app():
         col3.metric("Top Score", df["Score"].max())
 
         # Leaderboard
-        st.subheader("Top Students")
+        st.subheader("🏆 Top Students")
         st.dataframe(df.sort_values("Score", ascending=False).head(10))
 
         # Charts
         col1, col2 = st.columns(2)
 
+        # Create charts folder
+        if not os.path.exists("charts"):
+            os.makedirs("charts")
+
+        # Score Distribution
         with col1:
-            st.subheader("Score Distribution")
+            st.subheader("📈 Score Distribution")
             fig, ax = plt.subplots()
             ax.hist(df["Score"], bins=5)
             st.pyplot(fig)
 
+            # Save chart
+            chart_path = "charts/score_chart.png"
+            plt.savefig(chart_path)
+
+        # Department Performance
         with col2:
             if "Department" in df.columns:
-                st.subheader("Department Performance")
+                st.subheader("🏫 Department Performance")
                 st.bar_chart(df.groupby("Department")["Score"].mean())
 
+        # College Performance
         if "College" in df.columns:
-            st.subheader("College Performance")
+            st.subheader("🏢 College Performance")
             st.bar_chart(df.groupby("College")["Score"].mean())
 
-        # Question analysis
-        st.subheader("Question Difficulty")
+        # Question Analysis
+        st.subheader("❓ Question Difficulty")
 
         acc = {}
         for q in question_cols:
@@ -112,10 +128,40 @@ def main_app():
 
         q_df = pd.DataFrame.from_dict(acc, orient="index", columns=["Accuracy"])
         st.bar_chart(q_df)
-        
-        # Download
+
+        # ---------------- PDF FUNCTION ---------------- #
+        def generate_pdf():
+            doc = SimpleDocTemplate("quiz_report.pdf")
+            styles = getSampleStyleSheet()
+            elements = []
+
+            elements.append(Paragraph("Quiz Analysis Report", styles["Title"]))
+            elements.append(Spacer(1, 20))
+
+            elements.append(Paragraph(f"Total Students: {len(df)}", styles["Normal"]))
+            elements.append(Paragraph(f"Average Score: {round(df['Score'].mean(),2)}", styles["Normal"]))
+            elements.append(Paragraph(f"Top Score: {df['Score'].max()}", styles["Normal"]))
+            elements.append(Spacer(1, 20))
+
+            elements.append(Paragraph("Score Distribution", styles["Heading2"]))
+            elements.append(Image(chart_path, width=400, height=300))
+
+            doc.build(elements)
+
+        # PDF Button
+        if st.button("📄 Generate PDF Report"):
+            generate_pdf()
+
+            with open("quiz_report.pdf", "rb") as f:
+                st.download_button(
+                    "⬇️ Download PDF",
+                    f,
+                    file_name="quiz_report.pdf"
+                )
+
+        # CSV Download
         st.download_button(
-            "Download Report",
+            "⬇️ Download CSV",
             df.to_csv(index=False),
             "quiz_report.csv"
         )
@@ -123,7 +169,7 @@ def main_app():
     else:
         st.info("Upload a dataset to begin")
 
-# ---------------- RUN APP ---------------- #
+# ---------------- RUN ---------------- #
 if not st.session_state.logged_in:
     login()
 else:
