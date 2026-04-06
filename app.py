@@ -103,3 +103,26 @@ if data_file and answer_file:
     })
 
     st.table(stats_df)
+
+    #---- Report -----#
+    st.subheader("📄 Generate Analytics Report")
+
+    student_report, dept_report, college_report, q_report = generate_report(df, answer_df)
+
+    # Save to Excel
+    file_name = "quiz_analysis.xlsx"
+    
+    with pd.ExcelWriter(file_name, engine='xlsxwriter') as writer:
+        student_report.to_excel(writer, sheet_name="Student Report", index=False)
+        dept_report.to_excel(writer, sheet_name="Department Report")
+        college_report.to_excel(writer, sheet_name="College Report")
+        q_report.to_excel(writer, sheet_name="Question Report", index=False)
+
+    # Download button
+    with open(file_name, "rb") as f:
+        st.download_button(
+            label="📥 Download Full Report",
+            data=f,
+            file_name=file_name,
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
