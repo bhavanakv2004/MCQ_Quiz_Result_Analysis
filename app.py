@@ -1,141 +1,90 @@
 import streamlit as st
-import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import os
+from analysis import *
 
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Image, Spacer
-from reportlab.lib.styles import getSampleStyleSheet
+st.set_page_config(page_title="MCQ Analytics", layout="wide")
 
-# ---------------- CONFIG ---------------- #
-st.set_page_config(page_title="Quiz Analytics", layout="wide")
+st.title("📊 MCQ Quiz Analytics Dashboard")
 
-# ---------------- LOGIN USERS ---------------- #
-users = {
-    "admin": "1234",
-    "student": "abcd"
-}
+# Upload files
+data_file = st.file_uploader("Upload Student Data CSV", type=["csv"])
+answer_file = st.file_uploader("Upload Answer Key CSV", type=["csv"])
 
-# ---------------- SESSION ---------------- #
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
+if data_file and answer_file:
+    df, answer_df = load_data(data_file, answer_file)
+    df = calculate_score(df, answer_df)
 
-# ---------------- LOGIN FUNCTION ---------------- #
-def login():
-    st.title("🔐 Login Page")
+    st.subheader("📋 Data Preview")
+    st.dataframe(df)
 
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
+    # ---------------- SCORE DISTRIBUTION ---------------- #
+    st.subheader("📊 Student Score Distribution")
 
-    if st.button("Login"):
-        if username in users and users[username] == password:
-            st.session_state.logged_in = True
-            st.success("Login Successful ✅")
-            st.rerun()
-        else:
-            st.error("Invalid Username or Password ❌")
+    fig, ax = plt.subplots()
+    sns.histplot(df["Score"], bins=10, ax=ax)
+    ax.set_title("Student Score Distribution")
+    st.pyplot(fig)
 
-# ---------------- MAIN APP ---------------- #
-def main_app():
+    # ---------------- TOP STUDENTS ---------------- #
+    st.subheader("🏆 Leaderboard")
 
-    st.title("📊 Smart Quiz Analytics Dashboard")
+    top_students = leaderboard(df)
+    st.dataframe(top_students.head(10))
 
-    # Logout
-    if st.button("Logout"):
-        st.session_state.logged_in = False
-        st.rerun()
+    # ---------------- DEPARTMENT ---------------- #
+    st.subheader("🏢 Department Performance")
 
-    # Upload
-    file = st.file_uploader("Upload CSV or Excel File", type=["csv", "xlsx"])
+    dept = department_performance(df)
 
-    if file:
-        # Read file
-        if file.name.endswith(".csv"):
-            df = pd.read_csv(file)
-        else:
-            df = pd.read_excel(file)
+    fig, ax = plt.subplots()
+    dept.plot(kind="bar", ax=ax)
+    ax.set_title("Department Performance")
+    st.pyplot(fig)
 
-        df.columns = df.columns.str.strip()
+    # ---------------- COLLEGE ---------------- #
+    st.subheader("🏫 College Performance")
 
-        st.success("File uploaded successfully")
+    college = college_performance(df)
 
-        # Detect questions
-        question_cols = [col for col in df.columns if col.startswith("Q")]
-        st.write("Detected Questions:", question_cols)
+    fig, ax = plt.subplots()
+    college.sort_values().plot(kind="barh", ax=ax)
+    ax.set_title("College Performance")
+    st.pyplot(fig)
 
-        # Sidebar Answer Key
-        st.sidebar.header("Answer Key")
-        answer_key = {}
-        for q in question_cols:
-            answer_key[q] = st.sidebar.selectbox(q, ["A", "B", "C", "D"])
+    # ---------------- QUESTION ANALYSIS ---------------- #
+    st.subheader("❓ Question Analysis")
 
-        # Score calculation
-        def calc_score(row):
-            score = 0
-            for q in answer_key:
-                if row[q] == answer_key[q]:
-                    score += 1
-            return score
+    q_analysis = question_analysis(df, answer_df)
+    st.dataframe(q_analysis)
 
-        df["Score"] = df.apply(calc_score, axis=1)
-        df["Rank"] = df["Score"].rank(ascending=False)
+    fig, ax = plt.subplots()
+    sns.barplot(x="Question", y="Accuracy", data=q_analysis, ax=ax)
+    ax.set_title("Question Accuracy")
+    st.pyplot(fig)
 
-        # KPIs
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Total Students", len(df))
-        col2.metric("Average Score", round(df["Score"].mean(), 2))
-        col3.metric("Top Score", df["Score"].max())
+    # ---------------- ATTEMPT RATE ---------------- #
+    st.subheader("📌 Attempt Rate")
 
-        # Leaderboard
-        st.subheader("🏆 Top Students")
-        st.dataframe(df.sort_values("Score", ascending=False).head(10))
+    attempt = attempt_rate(df, answer_df)
+    st.dataframe(attempt)
 
-        # Charts
-        col1, col2 = st.columns(2)
+    fig, ax = plt.subplots()
+    sns.barplot(x="Question", y="Attempt Rate", data=attempt, ax=ax)
+    ax.set_title("Attempt Rate")
+    st.pyplot(fig)
 
-        # Score Distribution
-        with col1:
-            st.subheader("📈 Score Distribution")
-            fig, ax = plt.subplots()
-            ax.hist(df["Score"], bins=5)
-            st.pyplot(fig)
+    # ---------------- HEATMAP ---------------- #
+    st.subheader("🔥 Department vs College Heatmap")
 
-            #  Save chart (IMPORTANT FIX)
-            chart_path = "score_chart.png"
-            fig.savefig(chart_path)
+    pivot = heatmap_data(df)
 
-        # Department Performance
-        with col2:
-            if "Department" in df.columns:
-                st.subheader(" Department Performance")
-                st.bar_chart(df.groupby("Department")["Score"].mean())
+    fig, ax = plt.subplots()
+    sns.heatmap(pivot, annot=True, cmap="coolwarm", ax=ax)
+    st.pyplot(fig)
 
-        # College Performance
-        if "College" in df.columns:
-            st.subheader(" College Performance")
-            st.bar_chart(df.groupby("College")["Score"].mean())
+    # ---------------- STATISTICS ---------------- #
+    st.subheader("📈 Score Statistics")
 
-        # Question Analysis
-        st.subheader(" Question Difficulty")
-
-        acc = {}
-        for q in question_cols:
-            acc[q] = (df[q] == answer_key[q]).mean()
-
-        q_df = pd.DataFrame.from_dict(acc, orient="index", columns=["Accuracy"])
-        st.bar_chart(q_df)
-
-        # CSV Download
-        st.download_button(
-            "⬇️ Download CSV",
-            df.to_csv(index=False),
-            "quiz_report.csv"
-        )
-    else:
-        st.info("Upload a dataset to begin")
-
-# ---------------- RUN ---------------- #
-if not st.session_state.logged_in:
-    login()
-else:
-    main_app()
+    stats = score_statistics(df)
+    st.write(stats)
