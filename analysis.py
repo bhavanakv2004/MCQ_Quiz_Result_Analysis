@@ -8,11 +8,32 @@ def load_data(data_file, answer_file):
 
     df.fillna("Not Answered", inplace=True)
     df.columns = df.columns.str.strip()
+    answer_df.columns = answer_df.columns.str.strip()
 
     return df, answer_df
 
 
-# Calculate score
+# ---------------- FILE VALIDATION ---------------- #
+def validate_files(df, answer_df):
+    # Check answer file format
+    if "Question" not in answer_df.columns or "Answer" not in answer_df.columns:
+        return False, "❌ Answer file format is incorrect"
+
+    question_cols = answer_df["Question"].tolist()
+
+    # Detect swapped files
+    if "Q1" not in df.columns and "Q1" in answer_df.columns:
+        return False, "❌ Files seem swapped! Please upload correctly."
+
+    # Check student data
+    for q in question_cols:
+        if q not in df.columns:
+            return False, f"❌ Missing column {q} in student data"
+
+    return True, "✅ Files are valid"
+
+
+# ---------------- SCORE ---------------- #
 def calculate_score(df, answer_df):
     answer_key = dict(zip(answer_df["Question"], answer_df["Answer"]))
 
@@ -27,17 +48,16 @@ def calculate_score(df, answer_df):
     return df
 
 
-# Department performance
+# ---------------- PERFORMANCE ---------------- #
 def department_performance(df):
     return df.groupby("Department")["Score"].mean()
 
 
-# College performance
 def college_performance(df):
     return df.groupby("College")["Score"].mean()
 
 
-# Question analysis + difficulty
+# ---------------- QUESTION ANALYSIS ---------------- #
 def question_analysis(df, answer_df):
     answer_key = dict(zip(answer_df["Question"], answer_df["Answer"]))
     result = {}
@@ -60,7 +80,7 @@ def question_analysis(df, answer_df):
     )
 
 
-# Attempt rate
+# ---------------- ATTEMPT RATE ---------------- #
 def attempt_rate(df, answer_df):
     answer_key = dict(zip(answer_df["Question"], answer_df["Answer"]))
     result = {}
@@ -72,7 +92,7 @@ def attempt_rate(df, answer_df):
     return pd.DataFrame(result.items(), columns=["Question", "Attempt Rate"])
 
 
-# Score statistics
+# ---------------- STATISTICS ---------------- #
 def score_statistics(df):
     return {
         "Mean": df["Score"].mean(),
@@ -81,12 +101,11 @@ def score_statistics(df):
     }
 
 
-# Heatmap data
+# ---------------- HEATMAP ---------------- #
 def heatmap_data(df):
-    pivot = df.pivot_table(values="Score", index="Department", columns="College")
-    return pivot
+    return df.pivot_table(values="Score", index="Department", columns="College")
 
 
-# Leaderboard
+# ---------------- LEADERBOARD ---------------- #
 def leaderboard(df):
     return df.sort_values("Score", ascending=False)[["Name", "Score"]]
