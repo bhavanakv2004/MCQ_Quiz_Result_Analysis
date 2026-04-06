@@ -226,11 +226,31 @@ if data_file and answer_file:
         st.dataframe(report)
 
     # ---------------- DOWNLOAD ---------------- #
+       
     st.subheader("📥 Download Report")
-
-    st.download_button(
-        label="Download CSV",
-        data=filtered_df.to_csv(index=False),
-        file_name="quiz_analysis_report.csv",
-        mime="text/csv"
-    )
+    
+    download_df = None
+    
+    # Select correct report data
+    if report_type == "Student Report" and 'report' in locals():
+        download_df = report
+    
+    elif report_type == "Department Report":
+        download_df = dept.reset_index()
+    
+    elif report_type == "College Report":
+        download_df = college_df.reset_index()
+    
+    elif report_type == "Quiz Report":
+        download_df = report
+    
+    # Download button
+    if download_df is not None:
+        st.download_button(
+            label="Download Selected Report",
+            data=download_df.to_csv(index=False),
+            file_name=f"{report_type.replace(' ', '_').lower()}.csv",
+            mime="text/csv"
+        )
+    else:
+        st.info("Generate a report first to download.")
