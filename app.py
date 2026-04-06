@@ -163,7 +163,37 @@ if data_file and answer_file:
     strong_q = q_analysis[q_analysis["Accuracy"] > 0.8]
     st.dataframe(strong_q)
 
-    # ---------------- EXPORT REPORT ---------------- #
+
+    
+    # ---------------- REPORT GENERATION ---------------- #
+    st.header("📄 Generate Reports")
+
+    report_type = st.selectbox(
+        "Select Report Type",
+        ["Student Report", "Department Report", "College Report", "Quiz Report"]
+    )
+
+    # -------- STUDENT REPORT -------- #
+    if report_type == "Student Report":
+        st.subheader("👤 Student Report")
+
+        student_name = st.selectbox("Select Student", filtered_df["Name"].unique())
+        student_df = filtered_df[filtered_df["Name"] == student_name]
+
+        if not student_df.empty:
+            score = student_df["Score"].values[0]
+            rank = leaderboard_df[leaderboard_df["Name"] == student_name]["Rank"].values[0]
+
+            weak_topics = q_analysis[q_analysis["Accuracy"] < 0.5]["Question"].tolist()
+
+            report = pd.DataFrame({
+                "Metric": ["Score", "Rank", "Weak Questions"],
+                "Value": [score, rank, ", ".join(map(str, weak_topics))]
+            })
+
+            st.table(report)
+
+    # ---------------- DOWNLOAD REPORT ---------------- #
     st.subheader("📥 Download Report")
 
     st.download_button(
