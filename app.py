@@ -4,9 +4,11 @@ import seaborn as sns
 import pandas as pd
 from analysis import *
 
+# ---------------- PAGE CONFIG ---------------- #
 st.set_page_config(page_title="MCQ Analytics", layout="wide")
 
-st.title("📊 MCQ Quiz Analytics Dashboard")
+st.title("📊 Smart MCQ Quiz Analytics Dashboard")
+st.markdown("Analyze performance, identify weak areas, and rank students efficiently.")
 
 # ---------------- FILE UPLOAD ---------------- #
 data_file = st.file_uploader("Upload Student Data CSV", type=["csv"])
@@ -39,19 +41,26 @@ if data_file and answer_file:
     if students:
         filtered_df = filtered_df[filtered_df["Name"].isin(students)]
 
-    # ---------------- SECTION 1: OVERALL ANALYTICS ---------------- #
+    # ---------------- KPIs ---------------- #
+    st.subheader("📌 Key Metrics")
+
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Total Students", len(filtered_df))
+    col2.metric("Average Score", round(filtered_df["Score"].mean(), 2))
+    col3.metric("Highest Score", filtered_df["Score"].max())
+    col4.metric("Lowest Score", filtered_df["Score"].min())
+
+    # ---------------- OVERALL ANALYTICS ---------------- #
     st.header("📊 Overall Analytics")
 
     col1, col2 = st.columns(2)
 
-    # Score Distribution
     with col1:
-        fig, ax = plt.subplots(figsize=(5, 3))
-        sns.histplot(filtered_df["Score"], bins=10, ax=ax)
+        fig, ax = plt.subplots()
+        sns.histplot(filtered_df["Score"], bins=10, kde=True, ax=ax)
         ax.set_title("Score Distribution")
         st.pyplot(fig)
 
-    # Score Stats
     with col2:
         stats = score_statistics(filtered_df)
         stats_df = pd.DataFrame({
@@ -64,51 +73,73 @@ if data_file and answer_file:
         })
         st.table(stats_df)
 
-    # ---------------- SECTION 2: LEADERBOARD ---------------- #
+    # ---------------- BOX PLOT ---------------- #
+    st.subheader("📦 Score Spread")
+    fig, ax = plt.subplots()
+    sns.boxplot(x=filtered_df["Score"], ax=ax)
+    st.pyplot(fig)
+
+    # ---------------- LEADERBOARD ---------------- #
     st.header("🏆 Student Leaderboard")
 
     leaderboard_df = leaderboard(filtered_df)
+    leaderboard_df["Rank"] = leaderboard_df["Score"].rank(ascending=False, method="min")
+    leaderboard_df = leaderboard_df.sort_values("Rank")
+
     st.dataframe(leaderboard_df.head(10))
 
-    # ---------------- SECTION 3: DEPARTMENT PERFORMANCE ---------------- #
+    # ---------------- DEPARTMENT PERFORMANCE ---------------- #
     st.header("🏢 Department Performance")
 
     col1, col2 = st.columns(2)
 
     with col1:
         dept = department_performance(filtered_df)
-        fig, ax = plt.subplots(figsize=(5, 3))
+        fig, ax = plt.subplots()
         dept.plot(kind="bar", ax=ax)
         ax.set_title("Department Performance")
         st.pyplot(fig)
 
     with col2:
         pivot = heatmap_data(filtered_df)
-        fig, ax = plt.subplots(figsize=(5, 3))
+        fig, ax = plt.subplots()
         sns.heatmap(pivot, annot=True, cmap="coolwarm", ax=ax)
         st.pyplot(fig)
 
-    # ---------------- SECTION 4: COLLEGE PERFORMANCE ---------------- #
+    # Department Insights Table
+    st.subheader("📊 Department Insights")
+    dept_df = filtered_df.groupby("Department")["Score"].agg(["mean", "count"])
+    st.dataframe(dept_df)
+
+    # ---------------- COLLEGE PERFORMANCE ---------------- #
     st.header("🏫 College Ranking")
 
-    college = college_performance(filtered_df)
+    college_df = filtered_df.groupby("College")["Score"].mean().sort_values(ascending=False)
 
-    fig, ax = plt.subplots(figsize=(5, 3))
-    college.sort_values().plot(kind="barh", ax=ax)
+    fig, ax = plt.subplots()
+    college_df.plot(kind="barh", ax=ax)
     ax.set_title("College Performance")
     st.pyplot(fig)
 
-    # ---------------- SECTION 5: QUESTION ANALYSIS ---------------- #
-    st.header(" Question Analysis")
+    # ---------------- QUESTION ANALYSIS ---------------- #
+    st.header("❓ Question Analysis")
 
     col1, col2 = st.columns(2)
 
     with col1:
         q_analysis = question_analysis(filtered_df, answer_df)
+
+        # Add Difficulty Level
+        q_analysis["Difficulty"] = pd.cut(
+            q_analysis["Accuracy"],
+            bins=[0, 0.4, 0.7, 1],
+            labels=["Hard", "Medium", "Easy"]
+        )
+
         st.dataframe(q_analysis)
 
     with col2:
-        fig, ax = plt.subplots(figsize=(5, 3))
+        fig, ax = plt.subplots()
         sns.barplot(x="Question", y="Accuracy", data=q_analysis, ax=ax)
         ax.set_title("Question Accuracy")
         st.pyplot(fig)
@@ -118,7 +149,26 @@ if data_file and answer_file:
 
     attempt = attempt_rate(filtered_df, answer_df)
 
-    fig, ax = plt.subplots(figsize=(5, 3))
+    fig, ax = plt.subplots()
     sns.barplot(x="Question", y="Attempt Rate", data=attempt, ax=ax)
     ax.set_title("Attempt Rate")
     st.pyplot(fig)
+
+    # ---------------- WEAK & STRONG QUESTIONS ---------------- #
+    st.subheader("⚠️ Weak Questions")
+    weak_q = q_analysis[q_analysis["Accuracy"] < 0.5]
+    st.dataframe(weak_q)
+
+    st.subheader("💪 Strong Questions")
+    strong_q = q_analysis[q_analysis["Accuracy"] > 0.8]
+    st.dataframe(strong_q)
+
+    # ---------------- EXPORT REPORT ---------------- #
+    st.subheader("📥 Download Report")
+
+    st.download_button(
+        label="Download CSV Report",
+        data=filtered_df.to_csv(index=False),
+        file_name="quiz_analysis_report.csv",
+        mime="text/csv"
+    )
