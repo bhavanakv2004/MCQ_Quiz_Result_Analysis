@@ -99,7 +99,7 @@ if data_file and answer_file:
     st.pyplot(fig)
 
     # ---------------- SECTION 5: QUESTION ANALYSIS ---------------- #
-    st.header("❓ Question Analysis")
+    st.header(" Question Analysis")
 
     col1, col2 = st.columns(2)
 
