@@ -1,6 +1,7 @@
 import streamlit as st
 import matplotlib.pyplot as plt
 import seaborn as sns
+import pandas as pd
 from analysis import *
 
 st.set_page_config(page_title="MCQ Analytics", layout="wide")
@@ -13,8 +14,17 @@ answer_file = st.file_uploader("Upload Answer Key CSV", type=["csv"])
 
 if data_file and answer_file:
     df, answer_df = load_data(data_file, answer_file)
+
+    # Validate files
+    valid, message = validate_files(df, answer_df)
+
+    if not valid:
+        st.error(message)
+        st.stop()
+
     df = calculate_score(df, answer_df)
 
+    # ---------------- DATA ---------------- #
     st.subheader("📋 Data Preview")
     st.dataframe(df)
 
@@ -26,17 +36,14 @@ if data_file and answer_file:
     ax.set_title("Student Score Distribution")
     st.pyplot(fig)
 
-    # ---------------- TOP STUDENTS ---------------- #
+    # ---------------- LEADERBOARD ---------------- #
     st.subheader("🏆 Leaderboard")
-
-    top_students = leaderboard(df)
-    st.dataframe(top_students.head(10))
+    st.dataframe(leaderboard(df).head(10))
 
     # ---------------- DEPARTMENT ---------------- #
     st.subheader("🏢 Department Performance")
 
     dept = department_performance(df)
-
     fig, ax = plt.subplots()
     dept.plot(kind="bar", ax=ax)
     ax.set_title("Department Performance")
@@ -46,7 +53,6 @@ if data_file and answer_file:
     st.subheader("🏫 College Performance")
 
     college = college_performance(df)
-
     fig, ax = plt.subplots()
     college.sort_values().plot(kind="barh", ax=ax)
     ax.set_title("College Performance")
@@ -78,7 +84,6 @@ if data_file and answer_file:
     st.subheader("🔥 Department vs College Heatmap")
 
     pivot = heatmap_data(df)
-
     fig, ax = plt.subplots()
     sns.heatmap(pivot, annot=True, cmap="coolwarm", ax=ax)
     st.pyplot(fig)
@@ -87,4 +92,14 @@ if data_file and answer_file:
     st.subheader("📈 Score Statistics")
 
     stats = score_statistics(df)
-    st.write(stats)
+
+    stats_df = pd.DataFrame({
+        "Metric": ["Mean", "Median", "Std Dev"],
+        "Value": [
+            round(stats["Mean"], 2),
+            stats["Median"],
+            round(stats["Std Dev"], 2)
+        ]
+    })
+
+    st.table(stats_df)
