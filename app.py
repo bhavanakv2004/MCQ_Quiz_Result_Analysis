@@ -35,29 +35,6 @@ def login():
         else:
             st.error("Invalid Username or Password ❌")
 
-# ---------------- PDF FUNCTION ---------------- #
-def generate_pdf(df, chart_path):
-    doc = SimpleDocTemplate("quiz_report.pdf")
-    styles = getSampleStyleSheet()
-    elements = []
-
-    elements.append(Paragraph("Quiz Analysis Report", styles["Title"]))
-    elements.append(Spacer(1, 20))
-
-    elements.append(Paragraph(f"Total Students: {len(df)}", styles["Normal"]))
-    elements.append(Paragraph(f"Average Score: {round(df['Score'].mean(),2)}", styles["Normal"]))
-    elements.append(Paragraph(f"Top Score: {df['Score'].max()}", styles["Normal"]))
-    elements.append(Spacer(1, 20))
-
-    # Add chart image safely
-    if os.path.exists(chart_path):
-        elements.append(Paragraph("Score Distribution", styles["Heading2"]))
-        elements.append(Image(chart_path, width=400, height=300))
-    else:
-        elements.append(Paragraph("Chart not available", styles["Normal"]))
-
-    doc.build(elements)
-
 # ---------------- MAIN APP ---------------- #
 def main_app():
 
@@ -123,23 +100,23 @@ def main_app():
             ax.hist(df["Score"], bins=5)
             st.pyplot(fig)
 
-            # ✅ Save chart (IMPORTANT FIX)
+            #  Save chart (IMPORTANT FIX)
             chart_path = "score_chart.png"
             fig.savefig(chart_path)
 
         # Department Performance
         with col2:
             if "Department" in df.columns:
-                st.subheader("🏫 Department Performance")
+                st.subheader(" Department Performance")
                 st.bar_chart(df.groupby("Department")["Score"].mean())
 
         # College Performance
         if "College" in df.columns:
-            st.subheader("🏢 College Performance")
+            st.subheader(" College Performance")
             st.bar_chart(df.groupby("College")["Score"].mean())
 
         # Question Analysis
-        st.subheader("❓ Question Difficulty")
+        st.subheader(" Question Difficulty")
 
         acc = {}
         for q in question_cols:
@@ -147,17 +124,6 @@ def main_app():
 
         q_df = pd.DataFrame.from_dict(acc, orient="index", columns=["Accuracy"])
         st.bar_chart(q_df)
-
-        # ---------------- PDF BUTTON ---------------- #
-        if st.button("📄 Generate PDF Report"):
-            generate_pdf(df, chart_path)
-
-            with open("quiz_report.pdf", "rb") as f:
-                st.download_button(
-                    "⬇️ Download PDF",
-                    f,
-                    file_name="quiz_report.pdf"
-                )
 
         # CSV Download
         st.download_button(
