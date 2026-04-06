@@ -224,9 +224,7 @@ if data_file and answer_file:
         report = q_analysis.merge(attempt, on="Question")
 
         st.dataframe(report)
-
-    # ---------------- DOWNLOAD ---------------- #
-       
+    # ---------------- DOWNLOAD REPORT ---------------- #
     st.subheader("📥 Download Report")
     
     download_df = None
@@ -254,3 +252,5 @@ if data_file and answer_file:
         )
     else:
         st.info("Generate a report first to download.")
+       
+           
