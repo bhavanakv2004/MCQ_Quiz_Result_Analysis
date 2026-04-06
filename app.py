@@ -165,7 +165,6 @@ def main_app():
             df.to_csv(index=False),
             "quiz_report.csv"
         )
-
     else:
         st.info("Upload a dataset to begin")
 
