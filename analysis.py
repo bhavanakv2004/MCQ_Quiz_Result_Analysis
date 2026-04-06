@@ -109,3 +109,24 @@ def heatmap_data(df):
 # ---------------- LEADERBOARD ---------------- #
 def leaderboard(df):
     return df.sort_values("Score", ascending=False)[["Name", "Score"]]
+def generate_report(df, answer_df):
+    # Student Report
+    student_report = df[["Name", "Department", "College", "Score"]].copy()
+    student_report["Rank"] = student_report["Score"].rank(ascending=False, method="dense")
+
+    # Department Report
+    dept_report = df.groupby("Department").agg({
+        "Score": ["mean", "count"]
+    })
+    dept_report.columns = ["Avg Score", "Participation"]
+
+    # College Report
+    college_report = df.groupby("College").agg({
+        "Score": ["mean", "count"]
+    })
+    college_report.columns = ["Avg Score", "Participation"]
+
+    # Question Report
+    q_analysis = question_analysis(df, answer_df)
+
+    return student_report, dept_report, college_report, q_analysis
