@@ -193,11 +193,43 @@ if data_file and answer_file:
 
             st.table(report)
 
-    # ---------------- DOWNLOAD REPORT ---------------- #
+     # -------- DEPARTMENT REPORT -------- #
+    elif report_type == "Department Report":
+        st.subheader("🏢 Department Report")
+
+        dept = filtered_df.groupby("Department")["Score"].agg(["mean", "count"])
+        top_students = leaderboard_df.head(5)
+
+        st.write("### Average Scores")
+        st.dataframe(dept)
+
+        st.write("### Top Students")
+        st.dataframe(top_students)
+
+    # -------- COLLEGE REPORT -------- #
+    elif report_type == "College Report":
+        st.subheader("🏫 College Report")
+
+        college_df = filtered_df.groupby("College")["Score"].mean().sort_values(ascending=False)
+
+        st.write("### College Ranking")
+        st.dataframe(college_df)
+
+    # -------- QUIZ REPORT -------- #
+    elif report_type == "Quiz Report":
+        st.subheader("📝 Quiz Report")
+
+        attempt = attempt_rate(filtered_df, answer_df)
+
+        report = q_analysis.merge(attempt, on="Question")
+
+        st.dataframe(report)
+
+    # ---------------- DOWNLOAD ---------------- #
     st.subheader("📥 Download Report")
 
     st.download_button(
-        label="Download CSV Report",
+        label="Download CSV",
         data=filtered_df.to_csv(index=False),
         file_name="quiz_analysis_report.csv",
         mime="text/csv"
