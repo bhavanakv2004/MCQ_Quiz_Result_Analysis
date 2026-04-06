@@ -44,7 +44,7 @@ if data_file and answer_file:
     st.subheader("🏢 Department Performance")
 
     dept = department_performance(df)
-    fig, ax = plt.subplots(figsize=(3,3))
+    fig, ax = plt.subplots(figsize=(10,3))
     dept.plot(kind="bar", ax=ax)
     ax.set_title("Department Performance")
     st.pyplot(fig)
@@ -53,7 +53,7 @@ if data_file and answer_file:
     st.subheader("🏫 College Performance")
 
     college = college_performance(df)
-    fig, ax = plt.subplots(figsize=(5,3))
+    fig, ax = plt.subplots(figsize=(10,3))
     college.sort_values().plot(kind="barh", ax=ax)
     ax.set_title("College Performance")
     st.pyplot(fig)
@@ -64,7 +64,7 @@ if data_file and answer_file:
     q_analysis = question_analysis(df, answer_df)
     st.dataframe(q_analysis)
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(10,3))
     sns.barplot(x="Question", y="Accuracy", data=q_analysis, ax=ax)
     ax.set_title("Question Accuracy")
     st.pyplot(fig)
@@ -75,7 +75,7 @@ if data_file and answer_file:
     attempt = attempt_rate(df, answer_df)
     st.dataframe(attempt)
 
-    fig, ax = plt.subplots(figsize=(5,3))
+    fig, ax = plt.subplots(figsize=(10,3))
     sns.barplot(x="Question", y="Attempt Rate", data=attempt, ax=ax)
     ax.set_title("Attempt Rate")
     st.pyplot(fig)
@@ -84,7 +84,7 @@ if data_file and answer_file:
     st.subheader("🔥 Department vs College Heatmap")
 
     pivot = heatmap_data(df)
-    fig, ax = plt.subplots(figsize=(5,3))
+    fig, ax = plt.subplots(figsize=(10,3))
     sns.heatmap(pivot, annot=True, cmap="coolwarm", ax=ax)
     st.pyplot(fig)
 
