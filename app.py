@@ -31,7 +31,7 @@ if data_file and answer_file:
     # ---------------- SCORE DISTRIBUTION ---------------- #
     st.subheader("📊 Student Score Distribution")
 
-    fig, ax = plt.subplots(figsize=(6,3))
+    fig, ax = plt.subplots(figsize=(5,3))
     sns.histplot(df["Score"], bins=10, ax=ax)
     ax.set_title("Student Score Distribution")
     st.pyplot(fig)
